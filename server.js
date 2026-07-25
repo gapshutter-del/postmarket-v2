@@ -30,7 +30,34 @@ app.get("/api/health", (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+app.get("/api/db/health", async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("users")
+      .select("ref")
+      .limit(1);
 
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        database: "error",
+        message: error.message
+      });
+    }
+
+    return res.json({
+      success: true,
+      database: "connected"
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      database: "offline",
+      message: err.message
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
