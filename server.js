@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const supabase = require("./config/supabase");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
