@@ -112,12 +112,7 @@ router.get("/incoming", authenticate, async (req, res) => {
 // -----------------------------------------------------------------------------
 // Create booking
 // -----------------------------------------------------------------------------
-router.get("/", (req, res) => {
-    res.json({
-        success: true,
-        message: "Bookings router is mounted."
-    });
-});
+
 router.post("/", authenticate, async (req, res) => {
     try {
 
