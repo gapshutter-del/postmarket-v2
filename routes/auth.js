@@ -1,47 +1,247 @@
 const express = require("express");
 const resend = require("../config/resend");
+const supabase = require("../config/supabase");
+const { saveOTP, verifyOTP } = require("../services/otp");
 
 const router = express.Router();
 
-router.post("/send-otp", async (req, res) => {
-  try {
-    const { email } = req.body;
+/*
+|--------------------------------------------------------------------------
+| SEND OTP
+|--------------------------------------------------------------------------
+*/
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email required"
-      });
+router.post("/send-otp", async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        if (!email) {
+
+            return res.status(400).json({
+
+                success: false,
+                message: "Email is required"
+
+            });
+
+        }
+
+        const otp = saveOTP(email);
+
+        const response = await resend.emails.send({
+
+            from: process.env.FROM_EMAIL,
+
+            to: email,
+
+            subject: "Your PostMarket verification code",
+
+            html: `
+                <h2>PostMarket</h2>
+
+                <p>Your verification code is:</p>
+
+                <h1 style="font-size:36px;">${otp}</h1>
+
+                <p>This code expires in 10 minutes.</p>
+            `
+
+        });
+
+        console.log("OTP sent:", response);
+
+        return res.json({
+
+            success: true,
+
+            message: "OTP sent"
+
+        });
+
     }
 
-    console.log("Sending test email to:", email);
+    catch (err) {
 
-    const response = await resend.emails.send({
-      from: process.env.FROM_EMAIL,
-      to: email,
-      subject: "PostMarket Test Email",
-      html: `
-        <h2>Hello from PostMarket</h2>
-        <p>Your backend is successfully connected to Resend.</p>
-        <p>This is a test email.</p>
-      `
-    });
+        console.error(err);
 
-    console.log("Resend response:", response);
+        return res.status(500).json({
+
+            success: false,
+
+            message: err.message
+
+        });
+
+    }
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| VERIFY OTP
+|--------------------------------------------------------------------------
+*/
+
+router.post("/verify-otp", (req, res) => {
+
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+
+        return res.status(400).json({
+
+            success: false,
+            message: "Email and OTP required"
+
+        });
+
+    }
+
+    const valid = verifyOTP(email, otp);
+
+    if (!valid) {
+
+        return res.status(401).json({
+
+            success: false,
+            message: "Invalid or expired OTP"
+
+        });
+
+    }
 
     return res.json({
-      success: true,
-      response
+
+        success: true,
+        message: "OTP verified"
+
     });
 
-  } catch (err) {
-    console.error("Resend error:", err);
+});
 
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
+/*
+|--------------------------------------------------------------------------
+| SIGNUP
+|--------------------------------------------------------------------------
+*/
+
+router.post("/signup", async (req, res) => {
+
+    try {
+
+        const {
+
+            email,
+            first_name,
+            last_name,
+            phone,
+            role
+
+        } = req.body;
+
+        if (!email) {
+
+            return res.status(400).json({
+
+                success: false,
+                message: "Email required"
+
+            });
+
+        }
+
+        const { data, error } = await supabase
+
+            .from("users")
+
+            .insert({
+
+                email,
+                first_name,
+                last_name,
+                phone,
+                role
+
+            })
+
+            .select()
+
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+
+            success: true,
+            user: data
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.error("Signup error:", err);
+
+        return res.status(500).json({
+
+            success: false,
+            message: err.message
+
+        });
+
+    }
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
+
+router.post("/login", async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        const { data, error } = await supabase
+
+            .from("users")
+
+            .select("*")
+
+            .eq("email", email)
+
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+
+            success: true,
+
+            user: data
+
+        });
+
+    }
+
+    catch (err) {
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: err.message
+
+        });
+
+    }
+
 });
 
 module.exports = router;
