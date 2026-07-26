@@ -11,6 +11,7 @@ if (process.env.RESEND_API_KEY) {
 }
 
 console.log("FROM_EMAIL:", process.env.FROM_EMAIL);
+console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("==================================");
 
 if (!process.env.RESEND_API_KEY) {
