@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "super-secret-jwt-key-change-in-pro
 // -----------------------------------------------------------------------------
 // Authentication middleware
 // -----------------------------------------------------------------------------
+
 function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
 
@@ -30,7 +31,77 @@ function authenticate(req, res, next) {
         });
     }
 }
+// -----------------------------------------------------------------------------
+// Get advertiser bookings
+// -----------------------------------------------------------------------------
 
+router.get("/my", authenticate, async (req, res) => {
+
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("advertiser_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+// -----------------------------------------------------------------------------
+// Get creator bookings
+// -----------------------------------------------------------------------------
+
+router.get("/incoming", authenticate, async (req, res) => {
+
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select(`
+                *,
+                advertiser:users!bookings_advertiser_id_fkey(name)
+            `)
+            .eq("creator_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = data.map(b => ({
+            ...b,
+            advertiser_name: b.advertiser?.name || null
+        }));
+
+        return res.json({
+            success: true,
+            data: formatted
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
 // -----------------------------------------------------------------------------
 // Create booking
 // -----------------------------------------------------------------------------
@@ -83,142 +154,8 @@ router.post("/", authenticate, async (req, res) => {
 // -----------------------------------------------------------------------------
 // Get booking
 // -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-// My bookings (Advertiser)
-// -----------------------------------------------------------------------------
-router.get("/my", authenticate, async (req, res) => {
-    try {
-
-        const { data, error } = await supabase
-            .from("bookings")
-            .select("*")
-            .eq("advertiser_id", req.user.sub)
-            .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        return res.json({
-            success: true,
-            data
-        });
-
-    } catch (err) {
-
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-});
-
-// -----------------------------------------------------------------------------
-// Incoming bookings (Creator)
-// -----------------------------------------------------------------------------
-router.get("/incoming", authenticate, async (req, res) => {
-    try {
-
-        const { data, error } = await supabase
-            .from("bookings")
-            .select(`
-                *,
-                advertiser:users!bookings_advertiser_id_fkey(
-                    id,
-                    name,
-                    company_name
-                )
-            `)
-            .eq("creator_id", req.user.sub)
-            .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const formatted = (data || []).map(booking => ({
-            ...booking,
-            advertiser_name:
-                booking.advertiser?.company_name ||
-                booking.advertiser?.name ||
-                booking.advertiser_id
-        }));
-
-        return res.json({
-            success: true,
-            data: formatted
-        });
-
-    } catch (err) {
-
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-});
-
-// -----------------------------------------------------------------------------
-// Advertiser bookings
-// -----------------------------------------------------------------------------
-router.get("/my", authenticate, async (req, res) => {
-
-    try {
-
-        const { data, error } = await supabase
-            .from("bookings")
-            .select("*")
-            .eq("advertiser_id", req.user.sub)
-            .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        return res.json({
-            success: true,
-            data
-        });
-
-    } catch (err) {
-
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-
-});
-
-// -----------------------------------------------------------------------------
-// Creator incoming bookings
-// -----------------------------------------------------------------------------
-router.get("/incoming", authenticate, async (req, res) => {
-
-    try {
-
-        const { data, error } = await supabase
-            .from("bookings")
-            .select("*")
-            .eq("creator_id", req.user.sub)
-            .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        return res.json({
-            success: true,
-            data
-        });
-
-    } catch (err) {
-
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-
-});
-
 router.get("/:id", authenticate, async (req, res) => {
+
     try {
 
         const { data, error } = await supabase
@@ -242,6 +179,7 @@ router.get("/:id", authenticate, async (req, res) => {
         });
 
     }
+
 });
 
 // -----------------------------------------------------------------------------
