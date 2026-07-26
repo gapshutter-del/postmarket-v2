@@ -38,21 +38,22 @@ app.get("/api/routes", (req, res) => {
 
     res.json({
 
-        routes: [
+       routes: [
+    "/api/health",
+    "/api/db/health",
 
-            "/api/health",
+    "POST /api/auth/send-otp",
+    "POST /api/auth/verify-otp",
+    "POST /api/auth/signup",
+    "POST /api/auth/login",
+    "GET /api/auth/me",
 
-           "/api/db/health",
-
-"POST /api/auth/send-otp",
-
-"POST /api/auth/verify-otp",
-
-"POST /api/auth/signup",
-
-"POST /api/auth/login" 
-
-        ]
+    "POST /api/bookings",
+    "GET /api/bookings/my",
+    "GET /api/bookings/incoming",
+    "GET /api/bookings/:id",
+    "PATCH /api/bookings/:id/accept"
+] 
 
     });
 
