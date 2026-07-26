@@ -74,18 +74,25 @@ router.get("/incoming", authenticate, async (req, res) => {
         const { data, error } = await supabase
             .from("bookings")
             .select(`
-                *,
-                advertiser:users!bookings_advertiser_id_fkey(name)
-            `)
+    *,
+    advertiser:users!bookings_advertiser_id_fkey(
+        ref,
+        name,
+        company_name
+    )
+`)
             .eq("creator_id", req.user.sub)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        const formatted = data.map(b => ({
-            ...b,
-            advertiser_name: b.advertiser?.name || null
-        }));
+        const formatted = (data || []).map(b => ({
+    ...b,
+    advertiser_name:
+        b.advertiser?.company_name ||
+        b.advertiser?.name ||
+        b.advertiser_id
+}));
 
         return res.json({
             success: true,
