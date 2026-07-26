@@ -39,9 +39,15 @@ app.get("/api/routes", (req, res) => {
 
             "/api/health",
 
-            "/api/db/health",
+           "/api/db/health",
 
-            "POST /api/auth/send-otp"
+"POST /api/auth/send-otp",
+
+"POST /api/auth/verify-otp",
+
+"POST /api/auth/signup",
+
+"POST /api/auth/login" 
 
         ]
 
