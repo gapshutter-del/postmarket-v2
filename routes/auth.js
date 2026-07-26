@@ -1,0 +1,14 @@
+const express = require("express");
+
+const router = express.Router();
+
+router.post("/send-otp", (req, res) => {
+
+  res.json({
+    success: true,
+    message: "Auth route is working."
+  });
+
+});
+
+module.exports = router;
