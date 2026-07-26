@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PostMarket Email Test</title>
+</head>
+<body>
+
+<h2>PostMarket Email Test</h2>
+
+<input
+    id="email"
+    type="email"
+    placeholder="Enter your email"
+    style="width:300px;padding:8px;"
+>
+
+<button onclick="sendEmail()">
+    Send Test Email
+</button>
+
+<pre id="result"></pre>
+
+<script>
+async function sendEmail(){
+
+    const email = document.getElementById("email").value;
+
+    const response = await fetch("https://postmarket-v2.onrender.com/api/auth/send-otp",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            email
+        })
+
+    });
+
+    const data = await response.json();
+
+    document.getElementById("result").textContent =
+        JSON.stringify(data,null,2);
+
+}
+</script>
+</body>
+</html>
