@@ -156,6 +156,68 @@ router.get("/incoming", authenticate, async (req, res) => {
     }
 });
 
+// -----------------------------------------------------------------------------
+// Advertiser bookings
+// -----------------------------------------------------------------------------
+router.get("/my", authenticate, async (req, res) => {
+
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("advertiser_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+// -----------------------------------------------------------------------------
+// Creator incoming bookings
+// -----------------------------------------------------------------------------
+router.get("/incoming", authenticate, async (req, res) => {
+
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("creator_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
 router.get("/:id", authenticate, async (req, res) => {
     try {
 
