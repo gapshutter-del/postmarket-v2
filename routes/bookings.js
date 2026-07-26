@@ -112,6 +112,50 @@ router.get("/my", authenticate, async (req, res) => {
     }
 });
 
+// -----------------------------------------------------------------------------
+// Incoming bookings (Creator)
+// -----------------------------------------------------------------------------
+router.get("/incoming", authenticate, async (req, res) => {
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select(`
+                *,
+                advertiser:users!bookings_advertiser_id_fkey(
+                    id,
+                    name,
+                    company_name
+                )
+            `)
+            .eq("creator_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = (data || []).map(booking => ({
+            ...booking,
+            advertiser_name:
+                booking.advertiser?.company_name ||
+                booking.advertiser?.name ||
+                booking.advertiser_id
+        }));
+
+        return res.json({
+            success: true,
+            data: formatted
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+});
+
 router.get("/:id", authenticate, async (req, res) => {
     try {
 
