@@ -81,7 +81,7 @@ router.get("/incoming", authenticate, async (req, res) => {
         company_name
     )
 `)
-            .eq("creator_id", req.user.sub)
+            .eq("creator_ref", req.user.sub)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
