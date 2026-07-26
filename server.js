@@ -3,7 +3,7 @@ const supabase = require("./config/supabase");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-
+const authRoutes = require("./routes/auth");
 const app = express();
 
 app.use(helmet());
@@ -14,6 +14,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
     res.json({
@@ -29,6 +30,23 @@ app.get("/api/health", (req, res) => {
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
     });
+});
+app.get("/api/routes", (req, res) => {
+
+    res.json({
+
+        routes: [
+
+            "/api/health",
+
+            "/api/db/health",
+
+            "POST /api/auth/send-otp"
+
+        ]
+
+    });
+
 });
 app.get("/api/db/health", async (req, res) => {
   try {
