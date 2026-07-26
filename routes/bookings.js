@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const express = require("express");
 const supabase = require("../config/supabase");
 const jwt = require("jsonwebtoken");
@@ -128,7 +129,7 @@ router.post("/", authenticate, async (req, res) => {
 } = req.body;
 
         const advertiserRef = req.user.sub;
-
+        const bookingId = crypto.randomUUID();
         const { data, error } = await supabase
             .from("bookings")
             .insert({
