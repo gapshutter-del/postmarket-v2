@@ -89,9 +89,9 @@ router.get("/incoming", authenticate, async (req, res) => {
         const formatted = (data || []).map(b => ({
     ...b,
     advertiser_name:
-        b.advertiser?.company_name ||
-        b.advertiser?.name ||
-        b.advertiser_id
+    b.advertiser?.company_name ||
+    b.advertiser?.name ||
+    b.advertiser_ref
 }));
 
         return res.json({
@@ -126,13 +126,13 @@ router.post("/", authenticate, async (req, res) => {
     slots
 } = req.body;
 
-        const advertiserId = req.user.sub;
+        const advertiserRef = req.user.sub;
 
         const { data, error } = await supabase
             .from("bookings")
             .insert({
     creator_ref: creatorRef,
-    advertiser_ref: advertiserId,
+    advertiser_ref: advertiserRef,
     platforms: platforms || [],
     dates,
     slots: slots || [],
@@ -223,8 +223,8 @@ router.patch("/:id/accept", authenticate, async (req, res) => {
             .from("bookings")
             .update({
                 status: "accepted",
-                updated_at: new Date().toISOString()
-            })
+                })
+            
             .eq("id", req.params.id)
             .select()
             .single();
