@@ -1,3 +1,162 @@
-POST   /api/bookings
-GET    /api/bookings/:id
-PATCH  /api/bookings/:id/accept
+const express = require("express");
+const supabase = require("../config/supabase");
+const jwt = require("jsonwebtoken");
+
+const router = express.Router();
+
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-jwt-key-change-in-production";
+
+// -----------------------------------------------------------------------------
+// Authentication middleware
+// -----------------------------------------------------------------------------
+function authenticate(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        });
+    }
+
+    try {
+        const token = authHeader.split(" ")[1];
+        req.user = jwt.verify(token, JWT_SECRET);
+        next();
+    } catch (err) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token"
+        });
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Create booking
+// -----------------------------------------------------------------------------
+router.post("/", authenticate, async (req, res) => {
+    try {
+
+        const {
+            creatorId,
+            campaignName,
+            dates,
+            budget,
+            notes
+        } = req.body;
+
+        const advertiserId = req.user.sub;
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .insert({
+                creator_id: creatorId,
+                advertiser_id: advertiserId,
+                campaign_name: campaignName,
+                dates,
+                budget,
+                notes,
+                status: "pending"
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.status(201).json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Get booking
+// -----------------------------------------------------------------------------
+router.get("/:id", authenticate, async (req, res) => {
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("id", req.params.id)
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(404).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Accept booking
+// -----------------------------------------------------------------------------
+router.patch("/:id/accept", authenticate, async (req, res) => {
+
+    try {
+
+        const { data: booking, error: bookingError } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("id", req.params.id)
+            .single();
+
+        if (bookingError) throw bookingError;
+
+        if (booking.creator_id !== req.user.sub) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized"
+            });
+        }
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .update({
+                status: "accepted",
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", req.params.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+module.exports = router;
