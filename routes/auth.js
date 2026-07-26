@@ -128,12 +128,12 @@ if (!data || data.length !== 1) {
 
 const user = data[0];
 
-    const token = jwt.sign(
-      {
-        sub: user.id,
-        email: user.email,
-        type: user.type
-      },
+   const token = jwt.sign(
+  {
+    sub: user.ref,
+    email: user.email,
+    type: user.type
+  },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -248,7 +248,7 @@ router.post("/signup", async (req, res) => {
 
    const token = jwt.sign(
   {
-    sub: data.id,
+    sub: data.ref,
     email: data.email,
     type: data.type
   },
@@ -353,7 +353,7 @@ router.get("/me", async (req, res) => {
     const { data: user, error } = await supabase
       .from("users")
       .select("*")
-      .eq("id", payload.sub)
+      .eq("ref", payload.sub)
       .single();
 
     if (error) throw error;
