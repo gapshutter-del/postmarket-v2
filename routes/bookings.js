@@ -83,6 +83,35 @@ router.post("/", authenticate, async (req, res) => {
 // -----------------------------------------------------------------------------
 // Get booking
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// My bookings (Advertiser)
+// -----------------------------------------------------------------------------
+router.get("/my", authenticate, async (req, res) => {
+    try {
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("advertiser_id", req.user.sub)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            data
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+});
+
 router.get("/:id", authenticate, async (req, res) => {
     try {
 
