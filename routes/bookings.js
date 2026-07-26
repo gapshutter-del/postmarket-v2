@@ -75,7 +75,7 @@ router.get("/incoming", authenticate, async (req, res) => {
             .from("bookings")
             .select(`
     *,
-    advertiser:users!bookings_advertiser_id_fkey(
+    advertiser:users!bookings_advertiser_ref_fkey(
         ref,
         name,
         company_name
