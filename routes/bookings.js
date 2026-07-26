@@ -116,26 +116,34 @@ router.post("/", authenticate, async (req, res) => {
     try {
 
         const {
-            creatorId,
-            campaignName,
-            dates,
-            budget,
-            notes
-        } = req.body;
+    creatorId,
+    dates,
+    budget,
+    notes,
+    platforms,
+    deliverables,
+    campaignAssets,
+    slots
+} = req.body;
 
         const advertiserId = req.user.sub;
 
         const { data, error } = await supabase
             .from("bookings")
             .insert({
-                creator_id: creatorId,
-                advertiser_id: advertiserId,
-                campaign_name: campaignName,
-                dates,
-                budget,
-                notes,
-                status: "pending"
-            })
+    creator_ref: creatorId,
+    advertiser_ref: advertiserId,
+    platforms: platforms || [],
+    dates,
+    slots: slots || [],
+    total_fee: budget,
+    commission: 0,
+    creator_payout: budget,
+    campaign_brief: notes || null,
+    campaign_assets: campaignAssets || [],
+    deliverables: deliverables || [],
+    status: "pending"
+})
             .select()
             .single();
 
