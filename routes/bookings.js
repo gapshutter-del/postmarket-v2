@@ -42,7 +42,7 @@ router.get("/my", authenticate, async (req, res) => {
         const { data, error } = await supabase
             .from("bookings")
             .select("*")
-            .eq("advertiser_id", req.user.sub)
+            .eq("advertiser_ref", req.user.sub)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -116,7 +116,7 @@ router.post("/", authenticate, async (req, res) => {
     try {
 
         const {
-    creatorId,
+    creatorRef,
     dates,
     budget,
     notes,
@@ -131,7 +131,7 @@ router.post("/", authenticate, async (req, res) => {
         const { data, error } = await supabase
             .from("bookings")
             .insert({
-    creator_ref: creatorId,
+    creator_ref: creatorRef,
     advertiser_ref: advertiserId,
     platforms: platforms || [],
     dates,
@@ -212,7 +212,7 @@ router.patch("/:id/accept", authenticate, async (req, res) => {
 
         if (bookingError) throw bookingError;
 
-        if (booking.creator_id !== req.user.sub) {
+        if (booking.creator_ref !== req.user.sub) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized"
