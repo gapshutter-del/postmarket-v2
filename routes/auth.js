@@ -1,6 +1,10 @@
 const express = require("express");
 const resend = require("../config/resend");
 const supabase = require("../config/supabase");
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET =
+    process.env.JWT_SECRET || "super-secret-jwt-key-change-in-production";
 const { saveOTP, verifyOTP } = require("../services/otp");
 
 const router = express.Router();
@@ -84,41 +88,63 @@ router.post("/send-otp", async (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-router.post("/verify-otp", (req, res) => {
+router.post("/verify-otp", async (req, res) => {
+  try {
 
     const { email, otp } = req.body;
 
     if (!email || !otp) {
-
-        return res.status(400).json({
-
-            success: false,
-            message: "Email and OTP required"
-
-        });
-
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP required"
+      });
     }
 
     const valid = verifyOTP(email, otp);
 
     if (!valid) {
-
-        return res.status(401).json({
-
-            success: false,
-            message: "Invalid or expired OTP"
-
-        });
-
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired OTP"
+      });
     }
 
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error) throw error;
+
+    const token = jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        type: user.type
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     return res.json({
-
-        success: true,
-        message: "OTP verified"
-
+      success: true,
+      data: {
+        token,
+        user
+      }
     });
 
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
 });
 
 /*
@@ -209,13 +235,25 @@ router.post("/signup", async (req, res) => {
       throw error;
     }
 
-    return res.json({
+   const token = jwt.sign(
+  {
+    sub: data.id,
+    email: data.email,
+    type: data.type
+  },
+  JWT_SECRET,
+  {
+    expiresIn: "7d"
+  }
+);
 
-      success: true,
-
-      user: data
-
-    });
+return res.json({
+  success: true,
+  data: {
+    token,
+    user: data
+  }
+}); 
 
   }
 
@@ -282,5 +320,47 @@ router.post("/login", async (req, res) => {
     }
 
 });
+// -----------------------------------------------------------------------------
+// AUTHENTICATED USER
+// -----------------------------------------------------------------------------
 
+router.get("/me", async (req, res) => {
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", payload.sub)
+      .single();
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data: user
+    });
+
+  } catch (err) {
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token"
+    });
+
+  }
+});
+
+module.exports = router;
 module.exports = router;
