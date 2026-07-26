@@ -133,6 +133,7 @@ router.post("/", authenticate, async (req, res) => {
         const { data, error } = await supabase
             .from("bookings")
             .insert({
+    id: bookingId,
     creator_ref: creatorRef,
     advertiser_ref: advertiserRef,
     platforms: platforms || [],
