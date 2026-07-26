@@ -109,13 +109,24 @@ router.post("/verify-otp", async (req, res) => {
       });
     }
 
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
+    const { data, error } = await supabase
+  .from("users")
+  .select("*")
+  .eq("email", email);
 
-    if (error) throw error;
+console.log("VERIFY USER QUERY:", data);
+console.log("VERIFY USER ERROR:", error);
+
+if (error) throw error;
+
+if (!data || data.length !== 1) {
+  return res.status(500).json({
+    success: false,
+    message: `Expected 1 user, found ${data ? data.length : 0}`
+  });
+}
+
+const user = data[0];
 
     const token = jwt.sign(
       {
