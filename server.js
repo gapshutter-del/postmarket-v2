@@ -5,7 +5,9 @@ const cors = require("cors");
 const helmet = require("helmet");
 const authRoutes = require("./routes/auth");
 const app = express();
+const bookingRoutes = require("./routes/bookings");
 
+app.use("/api/bookings", bookingRoutes);
 app.use(helmet());
 
 app.use(cors({
