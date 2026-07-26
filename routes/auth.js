@@ -129,70 +129,109 @@ router.post("/verify-otp", (req, res) => {
 
 router.post("/signup", async (req, res) => {
 
-    try {
+  try {
 
-        const {
+    const {
+      email,
+      password,
+      name,
+      type,
+      company_name,
+      niche,
+      audience_desc,
+      platforms,
+      total_reach,
+      rate,
+      sa_id,
+      payout_method,
+      wallet_id
+    } = req.body;
 
-            email,
-            first_name,
-            last_name,
-            phone,
-            role
-
-        } = req.body;
-
-        if (!email) {
-
-            return res.status(400).json({
-
-                success: false,
-                message: "Email required"
-
-            });
-
-        }
-
-        const { data, error } = await supabase
-
-            .from("users")
-
-            .insert({
-
-                email,
-                first_name,
-                last_name,
-                phone,
-                role
-
-            })
-
-            .select()
-
-            .single();
-
-        if (error) throw error;
-
-        return res.json({
-
-            success: true,
-            user: data
-
-        });
-
+    if (!email || !password || !name || !type) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
     }
 
-    catch (err) {
+    // Create authentication account
 
-        console.error("Signup error:", err);
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
 
-        return res.status(500).json({
+        email,
+        password,
+        email_confirm: true
 
-            success: false,
-            message: err.message
+      });
 
-        });
-
+    if (authError) {
+      throw authError;
     }
+
+    // Create profile
+
+    const profile = {
+
+      id: authData.user.id,
+      ref: authData.user.id,
+      email,
+      name,
+      type,
+      status: "active",
+
+      company_name: company_name || null,
+
+      niche: niche || null,
+      audience_desc: audience_desc || null,
+      platforms: platforms || [],
+      total_reach: total_reach || 0,
+      rate: rate || 0,
+      sa_id: sa_id || null,
+      payout_method: payout_method || null,
+      wallet_id: wallet_id || null,
+
+      password_hash: ""
+
+    };
+
+    const { data, error } = await supabase
+
+      .from("users")
+
+      .insert(profile)
+
+      .select()
+
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return res.json({
+
+      success: true,
+
+      user: data
+
+    });
+
+  }
+
+  catch (err) {
+
+    console.error("Signup error:", err);
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: err.message
+
+    });
+
+  }
 
 });
 
