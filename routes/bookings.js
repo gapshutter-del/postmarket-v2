@@ -145,7 +145,7 @@ router.post("/", authenticate, async (req, res) => {
     campaign_brief: notes || null,
     campaign_assets: campaignAssets || [],
     deliverables: deliverables || [],
-    status: "pending"
+    status: "provisional"
 })
             .select()
             .single();
