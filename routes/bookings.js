@@ -225,7 +225,7 @@ router.patch("/:id/accept", authenticate, async (req, res) => {
         const { data, error } = await supabase
             .from("bookings")
             .update({
-                status: "accepted",
+                status: "confirmed",
                 })
             
             .eq("id", req.params.id)
