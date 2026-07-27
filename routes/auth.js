@@ -292,43 +292,73 @@ return res.json({
 
 router.post("/login", async (req, res) => {
 
-    try {
+  console.log("===== LOCAL LOGIN ROUTE =====");
+console.log("***** NEW LOGIN ROUTE RUNNING *****");
+  try {
 
-        const { email } = req.body;
+    const { email, password } = req.body;
 
-        const { data, error } = await supabase
-
-            .from("users")
-
-            .select("*")
-
-            .eq("email", email)
-
-            .single();
-
-        if (error) throw error;
-
-        return res.json({
-
-            success: true,
-
-            user: data
-
-        });
-
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required"
+      });
     }
 
-    catch (err) {
+    // Authenticate against Supabase Auth
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-        return res.status(500).json({
-
-            success: false,
-
-            message: err.message
-
-        });
-
+    if (authError) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
     }
+
+    // Load business profile
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error) throw error;
+
+    // Create PostMarket JWT
+    const token = jwt.sign(
+      {
+        sub: user.ref,
+        email: user.email,
+        type: user.type
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d"
+      }
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        token,
+        user
+      }
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
 
 });
 // -----------------------------------------------------------------------------
