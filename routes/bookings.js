@@ -24,6 +24,7 @@ function authenticate(req, res, next) {
     try {
         const token = authHeader.split(" ")[1];
         req.user = jwt.verify(token, JWT_SECRET);
+        console.log("JWT payload:", req.user);
         next();
     } catch (err) {
         return res.status(401).json({
@@ -71,7 +72,7 @@ router.get("/my", authenticate, async (req, res) => {
 router.get("/incoming", authenticate, async (req, res) => {
 
     try {
-
+console.log("Creator from JWT:", req.user.sub);
         const { data, error } = await supabase
             .from("bookings")
             .select(`
@@ -214,6 +215,9 @@ router.patch("/:id/accept", authenticate, async (req, res) => {
             .single();
 
         if (bookingError) throw bookingError;
+
+        console.log("Booking creator_ref:", booking.creator_ref);
+console.log("JWT creator:", req.user.sub);
 
         if (booking.creator_ref !== req.user.sub) {
             return res.status(403).json({
