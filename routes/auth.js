@@ -402,6 +402,66 @@ router.get("/me", async (req, res) => {
 
   }
 });
+// -----------------------------------------------------------------------------
+// UPDATE CREATOR PROFILE
+// -----------------------------------------------------------------------------
 
-module.exports = router;
+router.put("/profile", async (req, res) => {
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const {
+      name,
+      niche,
+      audience_desc,
+      platforms,
+      total_reach,
+      rate
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        name,
+        niche,
+        audience_desc,
+        platforms,
+        total_reach,
+        rate
+      })
+      .eq("ref", payload.sub)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+});
+
+
 module.exports = router;
