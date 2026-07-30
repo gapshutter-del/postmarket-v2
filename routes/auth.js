@@ -168,7 +168,21 @@ router.post("/signup", async (req, res) => {
 
   try {
 
-
+const {
+  email,
+  password,
+  name,
+  type,
+  company_name,
+  niche,
+  audience_desc,
+  platforms,
+  total_reach,
+  rate,
+  sa_id,
+  payout_method,
+  wallet_id
+} = req.body;
 
     if (!email || !password || !name || !type) {
       return res.status(400).json({
@@ -454,6 +468,208 @@ console.log(payload);
 
   }
 });
+/*
+|--------------------------------------------------------------------------
+| DISCOVER CREATORS
+|--------------------------------------------------------------------------
+*/
 
+router.get("/creators", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select(`
+        ref,
+        name,
+        niche,
+        platforms,
+        total_reach,
+        rate,
+        profile_photo,
+        cover_photo
+      `)
+      .eq("type", "creator");
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load creators.",
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC CREATOR
+|--------------------------------------------------------------------------
+*/
+
+router.get("/creators/:ref", async (req, res) => {
+ 
+
+  try {
+
+    const { ref } = req.params;
+
+    const { data, error } = await supabase
+      .from("users")
+      .select(`
+        ref,
+        name,
+        niche,
+        audience_desc,
+        platforms,
+        total_reach,
+        rate,
+        profile_photo,
+        cover_photo
+      `)
+      .eq("ref", ref)
+      .single();
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(404).json({
+      success: false,
+      message: "Creator not found.",
+    });
+
+  }
+});
+/*
+|--------------------------------------------------------------------------
+| SAVE CREATOR
+|--------------------------------------------------------------------------
+*/
+
+router.post("/favorites", async (req, res) => {
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    console.log("===== FAVORITES ROUTE HIT =====");
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { creator_ref } = req.body;
+
+    const { data, error } = await supabase
+      .from("favorites")
+      .insert({
+        advertiser_ref: payload.sub,
+        creator_ref
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data
+    });
+
+  } catch (err) {
+
+    console.error("FAVORITES ERROR:");
+console.error(err);
+
+if (err.code) console.error("Code:", err.code);
+if (err.message) console.error("Message:", err.message);
+if (err.details) console.error("Details:", err.details);
+if (err.hint) console.error("Hint:", err.hint);
+
+return res.status(500).json({
+  success: false,
+  message: "Unable to save creator."
+});
+
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| MY ROSTER
+|--------------------------------------------------------------------------
+*/
+console.log("Favorites route registered");
+router.get("/favorites", async (req, res) => {
+
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { data, error } = await supabase
+      .from("favorites")
+      .select(`
+        creator_ref,
+        users!favorites_creator_ref_fkey(
+          ref,
+          name,
+          niche,
+          audience_desc,
+          platforms,
+          total_reach,
+          rate,
+          profile_photo,
+          cover_photo
+        )
+      `)
+      .eq("advertiser_ref", payload.sub);
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load roster."
+    });
+
+  }
+
+});
 
 module.exports = router;
