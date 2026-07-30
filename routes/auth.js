@@ -168,21 +168,7 @@ router.post("/signup", async (req, res) => {
 
   try {
 
-    const {
-      email,
-      password,
-      name,
-      type,
-      company_name,
-      niche,
-      audience_desc,
-      platforms,
-      total_reach,
-      rate,
-      sa_id,
-      payout_method,
-      wallet_id
-    } = req.body;
+
 
     if (!email || !password || !name || !type) {
       return res.status(400).json({
@@ -343,10 +329,11 @@ console.log("***** NEW LOGIN ROUTE RUNNING *****");
 
     return res.json({
       success: true,
-      data: {
-        token,
-        user
-      }
+     data: {
+  token,
+  user,
+  supabaseSession: authData.session
+} 
     });
 
   } catch (err) {
@@ -420,26 +407,31 @@ router.put("/profile", async (req, res) => {
 
     const token = authHeader.split(" ")[1];
     const payload = jwt.verify(token, JWT_SECRET);
+console.log(payload);
 
     const {
-      name,
-      niche,
-      audience_desc,
-      platforms,
-      total_reach,
-      rate
-    } = req.body;
+  name,
+  niche,
+  audience_desc,
+  platforms,
+  total_reach,
+  rate,
+  profile_photo,
+  cover_photo
+} = req.body;
 
     const { data, error } = await supabase
       .from("users")
       .update({
-        name,
-        niche,
-        audience_desc,
-        platforms,
-        total_reach,
-        rate
-      })
+  name,
+  niche,
+  audience_desc,
+  platforms,
+  total_reach,
+  rate,
+  profile_photo,
+  cover_photo
+})
       .eq("ref", payload.sub)
       .select()
       .single();
