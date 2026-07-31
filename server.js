@@ -33,6 +33,19 @@ app.get("/", (req, res) => {
     });
 });
 
+app.get("/api/debug/favorites", async (req, res) => {
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("*");
+
+  res.json({
+    error,
+    data
+  });
+
+});
+
 app.get("/api/health", (req, res) => {
     res.json({
         success: true,

@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET =
     process.env.JWT_SECRET || "super-secret-jwt-key-change-in-production";
 const { saveOTP, verifyOTP } = require("../services/otp");
+console.log("JWT_SECRET PREFIX:");
+console.log(JWT_SECRET.substring(0, 20));
 
 const router = express.Router();
 
@@ -292,8 +294,7 @@ return res.json({
 
 router.post("/login", async (req, res) => {
 
-  console.log("===== LOCAL LOGIN ROUTE =====");
-console.log("***** NEW LOGIN ROUTE RUNNING *****");
+ 
   try {
 
     const { email, password } = req.body;
@@ -341,6 +342,9 @@ console.log("***** NEW LOGIN ROUTE RUNNING *****");
       }
     );
 
+   
+
+
     return res.json({
       success: true,
      data: {
@@ -379,6 +383,8 @@ router.get("/me", async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
+   
+
     const payload = jwt.verify(token, JWT_SECRET);
 
     const { data: user, error } = await supabase
@@ -421,7 +427,7 @@ router.put("/profile", async (req, res) => {
 
     const token = authHeader.split(" ")[1];
     const payload = jwt.verify(token, JWT_SECRET);
-console.log(payload);
+
 
     const {
   name,
@@ -459,7 +465,6 @@ console.log(payload);
 
   } catch (err) {
 
-    console.error(err);
 
     return res.status(500).json({
       success: false,
@@ -498,7 +503,7 @@ router.get("/creators", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    
 
     return res.status(500).json({
       success: false,
@@ -545,7 +550,7 @@ router.get("/creators/:ref", async (req, res) => {
 
   } catch (err) {
 
-    console.error(err);
+
 
     return res.status(404).json({
       success: false,
@@ -574,10 +579,18 @@ router.post("/favorites", async (req, res) => {
 
     console.log("===== FAVORITES ROUTE HIT =====");
     const token = authHeader.split(" ")[1];
+
+
     const payload = jwt.verify(token, JWT_SECRET);
 
-    const { creator_ref } = req.body;
+   const { creator_ref } = req.body;
 
+if (!creator_ref) {
+  return res.status(400).json({
+    success: false,
+    message: "creator_ref is required"
+  });
+}
     const { data, error } = await supabase
       .from("favorites")
       .insert({
@@ -588,6 +601,8 @@ router.post("/favorites", async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    console.log(data);
 
     return res.json({
       success: true,
@@ -617,9 +632,13 @@ return res.status(500).json({
 | MY ROSTER
 |--------------------------------------------------------------------------
 */
-console.log("Favorites route registered");
-router.get("/favorites", async (req, res) => {
 
+// -----------------------------------------------------------------------------
+// MY ROSTER
+// -----------------------------------------------------------------------------
+
+
+router.get("/favorites", async (req, res) => {
   try {
 
     const authHeader = req.headers.authorization;
@@ -661,6 +680,7 @@ router.get("/favorites", async (req, res) => {
 
   } catch (err) {
 
+    console.error("Favorites error:");
     console.error(err);
 
     return res.status(500).json({
@@ -669,7 +689,6 @@ router.get("/favorites", async (req, res) => {
     });
 
   }
-
 });
-
+  
 module.exports = router;
