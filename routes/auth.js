@@ -687,4 +687,54 @@ router.get("/favorites", async (req, res) => {
   }
 });
   
+/*
+|--------------------------------------------------------------------------
+| REMOVE FROM ROSTER
+|--------------------------------------------------------------------------
+*/
+
+router.delete("/favorites/:creatorRef", async (req, res) => {
+
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { creatorRef } = req.params;
+
+    const { error } = await supabase
+      .from("favorites")
+      .delete()
+      .eq("advertiser_ref", payload.sub)
+      .eq("creator_ref", creatorRef);
+
+    if (error) throw error;
+
+    return res.json({
+      success: true
+    });
+
+  } catch (err) {
+
+    console.error("Remove favorite error:");
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to remove creator."
+    });
+
+  }
+
+});
+
 module.exports = router;
