@@ -6,8 +6,7 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET =
     process.env.JWT_SECRET || "super-secret-jwt-key-change-in-production";
 const { saveOTP, verifyOTP } = require("../services/otp");
-console.log("JWT_SECRET PREFIX:");
-console.log(JWT_SECRET.substring(0, 20));
+
 
 const router = express.Router();
 
@@ -56,7 +55,7 @@ router.post("/send-otp", async (req, res) => {
 
         });
 
-        console.log("OTP sent:", response);
+        
 
         return res.json({
 
@@ -116,8 +115,6 @@ router.post("/verify-otp", async (req, res) => {
   .select("*")
   .eq("email", email);
 
-console.log("VERIFY USER QUERY:", data);
-console.log("VERIFY USER ERROR:", error);
 
 if (error) throw error;
 
@@ -577,7 +574,6 @@ router.post("/favorites", async (req, res) => {
       });
     }
 
-    console.log("===== FAVORITES ROUTE HIT =====");
     const token = authHeader.split(" ")[1];
 
 
@@ -602,7 +598,6 @@ if (!creator_ref) {
 
     if (error) throw error;
 
-    console.log(data);
 
     return res.json({
       success: true,
@@ -656,8 +651,9 @@ router.get("/favorites", async (req, res) => {
     const { data, error } = await supabase
       .from("favorites")
       .select(`
-        creator_ref,
-        users!favorites_creator_ref_fkey(
+  id,
+  creator_ref,
+  users!favorites_creator_ref_fkey(
           ref,
           name,
           niche,
