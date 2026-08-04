@@ -6,7 +6,7 @@ const helmet = require("helmet");
 const authRoutes = require("./routes/auth");
 const app = express();
 const bookingRoutes = require("./routes/bookings");
-
+const campaignRoutes = require("./routes/campaigns");
 
 app.use(helmet());
 
@@ -24,7 +24,7 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
-
+app.use("/api/campaigns", campaignRoutes);
 app.get("/", (req, res) => {
     res.json({
         success: true,

@@ -447,7 +447,8 @@ router.put("/profile", async (req, res) => {
   total_reach,
   rate,
   profile_photo,
-  cover_photo
+  cover_photo,
+  profile_status: "draft",
 })
       .eq("ref", payload.sub)
       .select()
