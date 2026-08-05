@@ -249,4 +249,254 @@ router.get("/:campaignRef/activity", async (req, res) => {
   }
 });
 
+router.post("/:campaignRef/assign", async (req, res) => {
+  try {
+
+    const { campaignRef } = req.params;
+   const { creator_refs } = req.body;
+
+if (!Array.isArray(creator_refs) || creator_refs.length === 0) {
+  return res.status(400).json({
+    success: false,
+    message: "At least one creator must be selected.",
+  });
+}
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    // Verify advertiser owns the campaign
+    const { data: campaign, error: campaignError } = await supabase
+      .from("campaigns")
+      .select("*")
+      .eq("campaign_ref", campaignRef)
+      .eq("advertiser_ref", payload.sub)
+      .single();
+
+    if (campaignError) throw campaignError;
+
+    // Verify creator exists
+    const { data: creator, error: creatorError } = await supabase
+      .from("users")
+      .select("ref, full_name")
+      .eq("ref", creator_ref)
+      .single();
+
+    if (creatorError) throw creatorError;
+
+    // Assign creator
+   const assignments = creator_refs.map((creator_ref) => ({
+  campaign_ref: campaignRef,
+  creator_ref,
+  status: "invited",
+}));
+
+const { data, error } = await supabase
+  .from("campaign_creators")
+  .insert(assignments)
+  .select();
+
+if (error) throw error;
+
+    // Timeline entry
+    const activity = creator_refs.map((creator_ref) => ({
+  campaign_ref: campaignRef,
+  actor_ref: payload.sub,
+  actor_role: "advertiser",
+  activity_type: "CREATOR_ASSIGNED",
+  message: `Creator ${creator_ref} invited.`,
+  metadata: {
+    creator_ref,
+  },
+}));
+
+await supabase
+  .from("campaign_activity")
+  .insert(activity);
+
+    res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+});
+
+router.get("/creator/invitations", async (req, res) => {
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { data, error } = await supabase
+      .from("campaign_creators")
+      .select(`
+        id,
+        status,
+        campaign_ref,
+        campaigns (
+          campaign_ref,
+          title,
+          objective,
+          caption,
+          advertiser_ref
+        )
+      `)
+      .eq("creator_ref", payload.sub)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+});
+
+router.post("/:campaignRef/slots", async (req, res) => {
+  try {
+
+    const { campaignRef } = req.params;
+
+    const {
+      slot_number,
+      scheduled_at,
+      execution_mode,
+    } = req.body;
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    const { data: campaign, error: campaignError } = await supabase
+      .from("campaigns")
+      .select("campaign_ref")
+      .eq("campaign_ref", campaignRef)
+      .eq("advertiser_ref", payload.sub)
+      .single();
+
+    if (campaignError) throw campaignError;
+
+    const { data, error } = await supabase
+      .from("campaign_slots")
+      .insert({
+        campaign_ref: campaign.campaign_ref,
+        slot_number,
+        scheduled_at,
+        execution_mode,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await supabase
+      .from("campaign_activity")
+      .insert({
+        campaign_ref: campaignRef,
+        actor_ref: payload.sub,
+        actor_role: "advertiser",
+        activity_type: "SLOT_CREATED",
+        message: `Slot ${slot_number} created.`,
+        metadata: {
+          slot_ref: data.slot_ref,
+          execution_mode,
+        },
+      });
+
+    return res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+});
+
+router.get("/:campaignRef/slots", async (req, res) => {
+
+  try {
+
+    const { campaignRef } = req.params;
+
+    const { data, error } = await supabase
+      .from("campaign_slots")
+      .select("*")
+      .eq("campaign_ref", campaignRef)
+      .order("slot_number");
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+
+});
+
 module.exports = router;
